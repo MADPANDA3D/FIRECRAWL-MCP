@@ -10,3 +10,8 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 2
+    ignore:
+      # Stay on the reviewed Node LTS line; runtime-major upgrades are deliberate.
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
