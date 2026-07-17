@@ -1,0 +1,12 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+node_modules
+coverage
+data
+test
+docs/internal-audits
+*.log
+*.tmp

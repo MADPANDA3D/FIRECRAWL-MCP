@@ -1,0 +1,145 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ghcr.io/madpanda3d/firecrawl-mcp-server
+  # Gitleaks v8.30.1, pinned to the linux/amd64 image manifest.
+  GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb
+
+jobs:
+  publish:
+    name: Verify and publish exact tag
+    runs-on: ubuntu-24.04
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+      packages: write
+    steps:
+      - name: Check out exact tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.ref }}
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - name: Verify exact stable tag
+        run: |
+          [[ "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          RELEASE_SHA=$(git rev-parse HEAD)
+          TAG_SHA=$(git rev-list -n 1 "refs/tags/$GITHUB_REF_NAME")
+          test "$RELEASE_SHA" = "$TAG_SHA"
+          test "$RELEASE_SHA" = "$GITHUB_SHA"
+          test "${GITHUB_REF_NAME#v}" = "$(node -p "require('./package.json').version")"
+      - name: Verify exact tagged source
+        run: |
+          npm ci --ignore-scripts
+          npm run check:conformance
+          npm audit --omit=dev
+      - name: Scan exact tag history with Gitleaks
+        run: |
+          docker run --rm --user "$(id -u):$(id -g)" \
+            --volume "$PWD:/repo:ro" --workdir /repo \
+            "$GITLEAKS_IMAGE" git --redact --verbose --no-banner .
+      - name: Compute exact-source fingerprint
+        id: source
+        run: |
+          echo "fingerprint=$(git archive --format=tar HEAD | sha256sum | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+      - name: Build release candidate
+        run: |
+          docker build \
+            --build-arg BUILD_SHA="$GITHUB_SHA" \
+            --build-arg SOURCE_FINGERPRINT="${{ steps.source.outputs.fingerprint }}" \
+            --tag firecrawl-mcp:release-candidate \
+            .
+      - name: Scan release candidate with Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.72.0
+          image-ref: firecrawl-mcp:release-candidate
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+      - name: Smoke release candidate in both modes
+        run: bash .github/scripts/smoke-image.sh firecrawl-mcp:release-candidate "$GITHUB_SHA"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute image tags and labels
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,format=long,prefix=sha-
+            type=raw,value=latest
+      - name: Publish image with SBOM and provenance
+        id: push
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_SHA=${{ github.sha }}
+            SOURCE_FINGERPRINT=${{ steps.source.outputs.fingerprint }}
+          sbom: true
+          provenance: mode=max
+      - name: Scan exact published digest with Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.72.0
+          image-ref: ${{ env.IMAGE_NAME }}@${{ steps.push.outputs.digest }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+      - name: Attest published image
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+      - name: Require anonymous pull access
+        run: |
+          docker logout ghcr.io
+          docker manifest inspect "${IMAGE_NAME}@${{ steps.push.outputs.digest }}" >/dev/null
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" \
+              --verify-tag \
+              --title "MADPANDA Firecrawl MCP $GITHUB_REF_NAME" \
+              --latest
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --verify-tag \
+              --title "MADPANDA Firecrawl MCP $GITHUB_REF_NAME" \
+              --generate-notes \
+              --notes "Container: \`${IMAGE_NAME}@${IMAGE_DIGEST}\`" \
+              --latest
+          fi

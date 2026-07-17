@@ -1,0 +1,48 @@
+services:
+  firecrawl-mcp:
+    build:
+      context: .
+      args:
+        BUILD_SHA: ${MCP_BUILD_SHA:-development}
+        SOURCE_FINGERPRINT: ${MCP_SOURCE_FINGERPRINT:-development}
+    image: ${MCP_RUNTIME_IMAGE:-firecrawl-mcp:local-source}
+    container_name: firecrawl-mcp
+    restart: unless-stopped
+    init: true
+    user: "1000:1000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
+    volumes:
+      - firecrawl-mcp-data:/data
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8080
+      MCP_MODE: ${MCP_MODE:-standalone}
+      MCP_ACCESS_TOKEN: ${MCP_ACCESS_TOKEN:-}
+      MCP_PORTAL_GRANT_TOKEN: ${MCP_PORTAL_GRANT_TOKEN:-}
+      MCP_BUILD_SHA: ${MCP_BUILD_SHA:-development}
+      MCP_SOURCE_FINGERPRINT: ${MCP_SOURCE_FINGERPRINT:-development}
+      MCP_IMAGE_REFERENCE: ${MCP_IMAGE_REFERENCE:-development}
+      MCP_CATALOG_VERSION: ${MCP_CATALOG_VERSION:-2026-07-17.1}
+      FIRECRAWL_PROVIDER_EXECUTION_ENABLED: ${FIRECRAWL_PROVIDER_EXECUTION_ENABLED:-false}
+      FIRECRAWL_MAX_OPERATION_CREDITS: ${FIRECRAWL_MAX_OPERATION_CREDITS:-25}
+      FIRECRAWL_DAILY_CREDIT_LIMIT: ${FIRECRAWL_DAILY_CREDIT_LIMIT:-50}
+      FIRECRAWL_MAX_IN_FLIGHT_PAID: ${FIRECRAWL_MAX_IN_FLIGHT_PAID:-1}
+      FIRECRAWL_PREVIEW_TTL_SECONDS: ${FIRECRAWL_PREVIEW_TTL_SECONDS:-300}
+      FIRECRAWL_LEDGER_PATH: ${FIRECRAWL_LEDGER_PATH:-/data/firecrawl-ledger.json}
+      FIRECRAWL_REQUEST_TIMEOUT_MS: ${FIRECRAWL_REQUEST_TIMEOUT_MS:-30000}
+      FIRECRAWL_RESPONSE_MAX_BYTES: ${FIRECRAWL_RESPONSE_MAX_BYTES:-1048576}
+      MCP_REQUEST_BODY_MAX_BYTES: ${MCP_REQUEST_BODY_MAX_BYTES:-131072}
+      MCP_TOOL_OUTPUT_MAX_BYTES: ${MCP_TOOL_OUTPUT_MAX_BYTES:-49152}
+    ports:
+      - "127.0.0.1:${MCP_HOST_PORT:-8080}:8080"
+
+volumes:
+  firecrawl-mcp-data:
+    name: firecrawl-mcp-data

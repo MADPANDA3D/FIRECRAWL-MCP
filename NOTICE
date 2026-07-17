@@ -1,0 +1,15 @@
+MADPANDA Firecrawl MCP
+Copyright 2026 MADPANDA3D
+
+This repository contains a dependency-free clean-room adapter authored for
+MADPANDA3D. It does not copy Firecrawl's AGPL API-core implementation.
+
+Compatibility and coverage research consulted:
+
+- Firecrawl MCP server, MIT, commit
+  3eb1115b1f2883ff2fb74e61b5c4acf5a9ac0fb0.
+- Firecrawl documentation v2 OpenAPI baseline
+  c4621cb28a9961bb6ecd268b1d8c8a838d84deb8.
+
+Firecrawl is a trademark of its respective owner. This project is not an
+official Firecrawl distribution.
