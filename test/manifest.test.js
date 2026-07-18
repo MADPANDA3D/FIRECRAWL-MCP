@@ -59,6 +59,13 @@ test('paid tools are non-read-only, destructive, open-world, non-idempotent and 
   }
 });
 
+test('list_capabilities accepts only the canonical descriptor flag and its compatibility alias', () => {
+  const schema = TOOLS.find(({ name }) => name === 'list_capabilities').inputSchema;
+  assert.equal(schema.additionalProperties, false);
+  assert.equal(schema.properties.include_descriptors.type, 'boolean');
+  assert.equal(schema.properties.includeDescriptors.type, 'boolean');
+});
+
 test('ToolManifest v2 is complete, deterministic, and hash-verifiable', () => {
   const manifest = buildToolManifest(makeConfig());
   const roundTrip = JSON.parse(JSON.stringify(manifest));

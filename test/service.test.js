@@ -70,10 +70,18 @@ test('navigation works locally and complete ToolManifest v2 is optional and boun
   assert.equal(normal.ok, true);
   assert.equal(normal.data.tools.length, 9);
   assert.equal(Object.hasOwn(normal.data, 'tool_manifest'), false);
+  assert.equal(Object.hasOwn(normal.data, 'toolManifest'), false);
   const full = await service.execute('list_capabilities', { includeDescriptors: true });
   assert.equal(full.data.tool_manifest.schemaVersion, '2.0.0');
+  assert.equal(full.data.toolManifest, full.data.tool_manifest);
   assert.equal(full.data.tool_manifest.tools.length, 9);
+  assert.equal(full.data.tools.length, 9);
   assert.ok(Buffer.byteLength(JSON.stringify(full)) <= 49152);
+  const portal = await service.execute('list_capabilities', { include_descriptors: true });
+  assert.equal(portal.data.toolManifest.tools.length, 9);
+  assert.equal(portal.data.tool_manifest, portal.data.toolManifest);
+  const unknown = await service.execute('list_capabilities', { descriptors: true });
+  assert.equal(unknown.error.code, 'validation_error');
 });
 
 test('coverage filtering and exact tool usage expose contract evidence', async () => {

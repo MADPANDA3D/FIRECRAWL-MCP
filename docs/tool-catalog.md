@@ -14,7 +14,9 @@ idempotent. They never contact Firecrawl.
 - `check_configuration` reports safe setup, mode, limit, and release metadata.
   It never returns header or credential values.
 - `list_capabilities` lists all nine tools and can include the complete bounded
-  ToolManifest when `includeDescriptors=true`.
+  ToolManifest when `include_descriptors=true`; `includeDescriptors` remains a
+  compatibility alias. Descriptor mode returns the same bounded manifest under
+  both `toolManifest` and the retained `tool_manifest` key.
 - `get_endpoint_coverage` filters the complete 50-operation coverage ledger.
 - `get_tool_usage` returns one exact descriptor. Fuzzy names and aliases are
   rejected.
