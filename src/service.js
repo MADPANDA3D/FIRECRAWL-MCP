@@ -240,6 +240,7 @@ export class FirecrawlService {
   }
 
   listCapabilities(args) {
+    const includeDescriptors = args.include_descriptors === true || args.includeDescriptors === true;
     return {
       tools: TOOLS.map((tool) => ({
         name: tool.name,
@@ -267,7 +268,7 @@ export class FirecrawlService {
         openapi: OPENAPI_PROVENANCE,
         clean_room: true,
       },
-      ...(args.includeDescriptors ? { tool_manifest: this.manifest } : {}),
+      ...(includeDescriptors ? { toolManifest: this.manifest, tool_manifest: this.manifest } : {}),
     };
   }
 

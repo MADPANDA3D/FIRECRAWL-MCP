@@ -63,6 +63,12 @@ test('health is secret-free and reports exact live tool count and release identi
   const health = await response.json();
   assert.equal(health.status, 'healthy');
   assert.equal(health.tool_count, 9);
+  assert.equal(health.service_id, 'firecrawl');
+  assert.equal(health.raw_tool_count, 9);
+  assert.equal(health.exposed_tool_count, 9);
+  assert.equal(health.agent_ready_tool_count, 9);
+  assert.equal(health.documented_tool_count, 9);
+  assert.equal(health.configuration_ready, true);
   assert.equal(health.provider_execution_enabled, false);
   assert.equal(health.immutable_provenance_configured, true);
   const serialized = JSON.stringify(health);
@@ -583,8 +589,12 @@ test('complete MCP wire responses remain below 48 KiB for descriptors and worst-
   };
 
   for (const protocolVersion of ['2025-03-26', '2025-06-18']) {
-    const capabilities = await call('list_capabilities', { includeDescriptors: true }, protocolVersion);
-    assert.equal(envelopeFor(capabilities).data.tool_manifest.tools.length, 9);
+    const capabilities = await call('list_capabilities', { include_descriptors: true }, protocolVersion);
+    const capabilityData = envelopeFor(capabilities).data;
+    assert.equal(capabilityData.tools.length, 9);
+    assert.equal(capabilityData.tool_manifest.tools.length, 9);
+    assert.equal(Object.hasOwn(capabilityData, 'toolManifest'), protocolVersion === '2025-06-18');
+    if (protocolVersion === '2025-06-18') assert.equal(capabilityData.toolManifest.tools.length, 9);
     const read = await call('firecrawl_get_credit_usage', {}, protocolVersion);
     assert.equal(envelopeFor(read).ok, true);
     await paid('firecrawl_scrape_public_page', {

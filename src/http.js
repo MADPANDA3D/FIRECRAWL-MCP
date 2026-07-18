@@ -96,26 +96,33 @@ const validJsonRpcRequest = (payload) => (
   )
 );
 
-const toolCallResponse = (id, envelope, protocolVersion) => ({
-  jsonrpc: '2.0',
-  id,
-  result: {
-    content: [{
-      type: 'text',
-      text: protocolVersion === MCP_PROTOCOL_VERSION
-        ? envelope.ok
-          ? 'Firecrawl MCP tool completed; use the attached structuredContent result.'
-          : 'Firecrawl MCP tool failed with ' + envelope.error.code + '; use the attached structuredContent error.'
-        : JSON.stringify(envelope),
-    }],
-    ...(protocolVersion === MCP_PROTOCOL_VERSION ? { structuredContent: envelope } : {}),
-    isError: !envelope.ok,
-  },
-});
+const toolCallResponse = (id, envelope, protocolVersion) => {
+  const { toolManifest: _toolManifest, ...legacyData } = envelope.data || {};
+  const legacyEnvelope = envelope.ok && envelope.meta?.tool === 'list_capabilities' && envelope.data?.tool_manifest
+    ? { ...envelope, data: legacyData }
+    : envelope;
+  return {
+    jsonrpc: '2.0',
+    id,
+    result: {
+      content: [{
+        type: 'text',
+        text: protocolVersion === MCP_PROTOCOL_VERSION
+          ? envelope.ok
+            ? 'Firecrawl MCP tool completed; use structuredContent.'
+            : 'Firecrawl MCP tool failed with ' + envelope.error.code + '; use the attached structuredContent error.'
+          : JSON.stringify(legacyEnvelope),
+      }],
+      ...(protocolVersion === MCP_PROTOCOL_VERSION ? { structuredContent: envelope } : {}),
+      isError: !envelope.ok,
+    },
+  };
+};
 
 const healthPayload = (config, manifest) => {
   const grantConfigured = typeof config.portalGrantToken === 'string' && config.portalGrantToken.length >= 32;
   const accessTokenConfigured = typeof config.accessToken === 'string' && config.accessToken.length >= 32;
+  const accessControlConfigured = config.mode === 'portal' ? grantConfigured : accessTokenConfigured;
   const immutableProvenanceConfigured = (
     /^[a-f0-9]{40}$/u.test(config.buildSha)
     && /^[a-f0-9]{64}$/u.test(config.sourceFingerprint)
@@ -124,13 +131,19 @@ const healthPayload = (config, manifest) => {
   return {
     status: 'healthy',
     service: SERVICE_NAME,
+    service_id: manifest.serviceId,
     version: SERVICE_VERSION,
     tool_count: TOOL_COUNT,
+    raw_tool_count: manifest.rawToolCount,
+    exposed_tool_count: TOOL_COUNT,
+    agent_ready_tool_count: manifest.agentReadyToolCount,
+    documented_tool_count: manifest.documentedToolCount,
     setup_status: config.providerExecutionEnabled ? 'provider_enabled' : 'setup_required',
     provider_execution_enabled: config.providerExecutionEnabled,
     provider_origin: config.providerOrigin,
     access_mode: config.mode,
-    access_control_configured: config.mode === 'portal' ? grantConfigured : accessTokenConfigured,
+    access_control_configured: accessControlConfigured,
+    configuration_ready: accessControlConfigured,
     portal_grant_configured: grantConfigured,
     immutable_provenance_configured: immutableProvenanceConfigured,
     build_sha: config.buildSha,

@@ -80,7 +80,10 @@ const RAW_TOOLS = [
     family: 'navigation',
     endpoint: null,
     description: 'Use this to discover the exact reviewed tools, paid-call preview flow, credit controls, and deliberate exclusions. This never contacts Firecrawl.',
-    inputSchema: object({ includeDescriptors: boolean('Include the complete bounded ToolManifest v2. Defaults false.') }),
+    inputSchema: object({
+      include_descriptors: boolean('Include ToolManifest v2.'),
+      includeDescriptors: boolean('Alias for include_descriptors.'),
+    }),
     annotations: navigationAnnotations,
   },
   {
