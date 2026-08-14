@@ -1,5 +1,5 @@
 # linux/amd64 Node 24.18.0 LTS pin. Update the digest deliberately when upgrading.
-FROM node:24.18.0-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
+FROM node:24.19.0-bookworm-slim@sha256:3638d9a6fe4030bd716be989438248074489337ba3275657f93595428be4fc03
 
 ARG BUILD_SHA=development
 ARG SOURCE_FINGERPRINT=development
