@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 — 2026-10-22
+
+- Pinned the container runtime to Node.js 24.22.1 and updated CI to fixed Node.js 22/24 releases.
+- Preserved the nine-tool contract, disabled provider execution, and deployment controls.
+
 ## 1.1.0 — 2026-07-17
 
 - Added startup-selected `portal` and `standalone` access modes.
