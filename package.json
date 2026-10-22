@@ -1,6 +1,6 @@
 {
   "name": "@madpanda3d/firecrawl-mcp",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Dual-mode, budgeted clean-room Firecrawl MCP adapter",
   "type": "module",
   "private": true,

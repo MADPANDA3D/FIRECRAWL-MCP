@@ -1,7 +1,7 @@
 export const SERVICE_NAME = 'firecrawl-mcp';
 export const SERVICE_ID = 'firecrawl';
 export const SERVICE_TITLE = 'MADPANDA Firecrawl MCP';
-export const SERVICE_VERSION = '1.1.0';
+export const SERVICE_VERSION = '1.1.1';
 export const TOOL_COUNT = 9;
 export const MCP_PROTOCOL_VERSION = '2025-06-18';
 export const SUPPORTED_PROTOCOL_VERSIONS = new Set(['2025-06-18', '2025-03-26']);
