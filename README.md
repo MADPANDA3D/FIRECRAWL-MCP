@@ -254,7 +254,7 @@ and [the security policy](SECURITY.md).
 
 ## Run from source
 
-Node.js 22.22+ or 24.17+ is supported.
+Node.js 22.23.4 or later within 22, or 24.22.1 or later within 24, is supported.
 
 ```sh
 npm ci --ignore-scripts
